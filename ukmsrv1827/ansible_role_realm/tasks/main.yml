@@ -1,0 +1,101 @@
+---
+# tasks file for ansible-ad-join
+
+- name: Prompt for the Active Directory username
+  pause:
+    prompt: "Enter the Active Directory username"
+  register: ad_user_input
+  when: ad_user is not defined
+
+- name: Prompt for the Active Directory password
+  pause:
+    prompt: "Enter the Active Directory password"
+    echo: no
+  register: ad_password_input
+  no_log: true
+  when: ad_password is not defined
+
+- name: Prompt for the department
+  pause:
+    prompt: "Which department does the server belong to? (e.g., department1, department2)"
+  register: department_input
+  when: department_input is not defined
+
+- name: Extract ad name and ad password
+  ansible.builtin.set_fact:
+    ad_user: "{{ ad_user_input.user_input }}"
+    ad_password: "{{ ad_password_input.user_input }}"
+  when: ad_user is not defined and ad_password is not defined
+
+- name: Extract OU name and AD groups for the department
+  ansible.builtin.set_fact:
+    ou_name: "{{ departments[department_input.user_input]['ou_name'] }}"
+    ad_groups: "{{ departments[department_input.user_input]['ad_groups'] }}"
+
+- name: Check if already joined to a domain
+  ansible.builtin.command: realm discover
+  register: realm_list
+  changed_when: false
+  failed_when: false
+
+- name: Extract domain name
+  ansible.builtin.set_fact:
+    ad_domain: "{{ realm_list.stdout_lines[0] }}"
+  when: "'  configured: kerberos-member' in realm_list.stdout_lines"
+
+- name: Display message if already joined to a domain
+  ansible.builtin.debug:
+    msg: "The server is already part of the domain: {{ ad_domain }}"
+  when: "'  configured: kerberos-member' in realm_list.stdout_lines"
+
+- name: Discover the domain
+  ansible.builtin.command: realm discover
+  register: realm_discover
+  changed_when: false
+  failed_when: false
+  when: "'  configured: no' in realm_list.stdout_lines"
+
+- name: Set ad_domain if not already set
+  ansible.builtin.set_fact:
+    ad_domain: "{{ realm_discover.stdout_lines[0] }}"
+  when: "'  configured: no' in realm_list.stdout_lines"
+
+- name: Install necessary packages
+  ansible.builtin.dnf:
+    name: "{{ packages }}"
+    state: present
+  become: true
+  when: "'  configured: no' in realm_list.stdout_lines"
+
+- name: Join the Active Directory domain
+  ansible.builtin.shell: |
+    echo "{{ ad_password }}" | realm join --verbose "{{ ad_domain }}" -U "{{ ad_user }}" --computer-ou="{{ ou_name }}"
+  register: domain_join
+  become: true
+  notify: Restart sssd
+  when: "'  configured: no' in realm_list.stdout_lines"
+
+- name: Grant access to AD groups
+  ansible.builtin.command: realm permit --groups {{ item }}
+  loop: "{{ ad_groups }}"
+  become: true
+  when: domain_join is changed
+
+- name: Grant sudo privileges to AD groups
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: '%{{ item }} ALL=(ALL:ALL) ALL'
+    state: present
+    validate: 'visudo -cf %s'
+  loop: "{{ ad_groups }}"
+  become: true
+  when: domain_join is changed
+
+- name: Allow user login without FQDN
+  ansible.builtin.lineinfile:
+    path: /etc/sssd/sssd.conf
+    regexp: '^use_fully_qualified_names'
+    line: 'use_fully_qualified_names = False'
+    backup: yes
+  become: true
+  notify: Restart sssd

@@ -1,0 +1,10 @@
+---
+- name: Prompt for new hostname
+  ansible.builtin.pause:
+    prompt: "What is the new hostname?"
+  register: new_hostname
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ new_hostname.user_input }}"
+  become: yes

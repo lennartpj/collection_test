@@ -1,0 +1,23 @@
+---
+dependencies: []
+galaxy_info:
+  author: Lennart Pieperjohanns
+  description: This role will install all dependencies to Discover and Join an Active Directory domain
+  license: "license (BSD, MIT)"
+  min_ansible_version: '2.4'
+  platforms:
+    - name: EL
+      versions:
+        - '8'
+        - '9'
+  galaxy_tags:     
+    - system
+    - linux
+    - sssd
+    - realm
+    - samba
+    - winbind
+    - krb5
+    - redhat
+    - centos
+    - ansible

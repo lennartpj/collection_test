@@ -1,0 +1,27 @@
+---
+# tasks file for ansible_role_root_config
+- name: Prompt for new root password
+  pause:
+    prompt: "Please enter the new root password:"
+  register: root_password_input
+  when: new_root_password == ""
+  no_log: true
+
+- name: Set new root password variable from user input
+  set_fact:
+    new_root_password: "{{ root_password_input.user_input | password_hash('sha512') }}"
+  when: new_root_password == ""
+  no_log: true
+
+- name: Change root password
+  user:
+    name: root
+    password: "{{ new_root_password }}"
+  no_log: true
+
+- name: Set PermitRootLogin to 'no' in sshd config
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+  notify: restart ssh

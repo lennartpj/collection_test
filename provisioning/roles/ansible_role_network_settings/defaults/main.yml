@@ -1,0 +1,13 @@
+---
+# defaults file for ansible_role_network_settings
+ipv4_dns: 
+  - 10.32.1.5
+  - 10.32.1.6
+ipv4_dns_search: "ukmuenster.de"
+ipv6_method: "auto"
+ipv6_addr_gen_mode: "stable-privacy"
+ipv6_dns_search: "ukmuenster.de"
+ipv6_ip6_privacy: "disabled"
+ipv4_method: "manual"
+connection_interface_name: "ens192"
+connection_zone: "public"

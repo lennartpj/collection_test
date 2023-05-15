@@ -1,0 +1,15 @@
+galaxy_info:
+  author: Lennart Pieperjohanns
+  description: This role is used to set the network settings for RHEL8 and RHEL9 servers
+  license: MIT
+  min_ansible_version: 2.4
+  platforms:
+  - name: EL
+    versions:
+    - '8'
+    - '9'
+
+  galaxy_tags: []
+
+dependencies: 
+  - linux-system-roles

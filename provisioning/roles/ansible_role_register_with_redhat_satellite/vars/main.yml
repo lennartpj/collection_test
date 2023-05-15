@@ -1,0 +1,6 @@
+---
+# vars file for ansible_role_register_with_redhat_satellite
+
+satellite_links:
+  - "curl -sS  'https://ukmsrv1825.ukmuenster.de/register?activation_keys=UKM&force=true&location_id=2&organization_id=1&update_packages=true' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo1LCJpYXQiOjE2ODQxNDg2MzUsImp0aSI6IjcwNjczZWFjYjg5NWYwOTgyMmVjNGZmZjYyN2Y3YTE3ZjlmMGY0NGMyMDg5MTRmNDY4Y2NhYzM3NjM5MWY4YjAiLCJzY29wZSI6InJlZ2lzdHJhdGlvbiNnbG9iYWwgcmVnaXN0cmF0aW9uI2hvc3QifQ.McH8aq2vQ2phmAQZksuEJGD8JHE1kpitEHRGcD9CXz8' | bash"
+  

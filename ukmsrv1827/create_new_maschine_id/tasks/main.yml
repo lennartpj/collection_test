@@ -1,0 +1,9 @@
+---
+- name: Create new maschine-id
+  ansible.builtin.shell: |
+    chmod 777 /etc/machine-id
+    echo "" > /etc/machine-id
+    mv /etc/machine-id /etc/machine-id.oldid
+    systemd-machine-id-setup
+    chmod 444 /etc/machine-id
+

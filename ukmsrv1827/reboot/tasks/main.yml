@@ -1,0 +1,8 @@
+---
+- name: Sleep for 30 seconds and continue with role
+  ansible.builtin.wait_for:
+    timeout: 30
+
+- name: Reboot
+  ansible.builtin.shell: |
+    reboot

@@ -1,0 +1,41 @@
+---
+- name: Provision new host
+  hosts: localhost
+  vars_prompt:
+    - name: hostname
+      prompt: Wie ist der Hostname?
+      private: false
+
+    - name: ip
+      prompt: "IP-Adresse/Suffix (10.0.0.2/24):"
+      private: false
+
+    - name: gateway
+      prompt: "Gateway:"
+      private: false
+
+    - name: activationkey
+      prompt: "Welche Subscription soll das System erhalten? ((1) RHEL_Prod_Premium, (2) RHEL_Prod_Standard, (3) RHEL_Test, (4) RHEL_SAP_HANA_Solutions_Premium)"
+      private: false
+
+    - name: aduser
+      prompt: "Admin User für Domain Join: (ohne @ukmuenster.de):"
+      private: false
+
+    - name: adpasswd
+      prompt: "Passwort fuer den Domain Join:"
+      private: true
+      encrypt: sha512_crypt
+      confirm: true
+
+    - name: department
+      prompt: "Abteilung/Team im GBIT?: (DC, KS, BS, SO, NETZ, KM):"
+      private: false
+
+    - name: rootpw
+      prompt: "Das neue Passwort fuer den Root setzen:"
+      private: false
+      confirm: true
+
+  roles:
+    - ad_join

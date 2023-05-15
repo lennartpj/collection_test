@@ -1,0 +1,23 @@
+---
+# tasks file for ansible_role_register_with_redhat_satellite
+
+- name: Check if system is already registered
+  command: subscription-manager status
+  register: subscription_status
+  ignore_errors: true
+  changed_when: false
+
+- name: Pause for user input
+  pause:
+    prompt: "Please select an option for the registration key: 1) Key 1 2) Key 2 3) Key 3"
+  register: activation_key_input
+  when: "'Current' not in subscription_status.stdout and activation_key_input is undefined"
+
+- name: Set registration_link variable
+  set_fact:
+    registration_link: "{{ satellite_links[(activation_key_input.user_input if activation_key_input is undefined else activation_key_input) | int - 1] }}"
+  when: "'Current' not in subscription_status.stdout"
+
+- name: Register the server
+  command: "{{ registration_link }}"
+  when: "'Current' not in subscription_status.stdout"

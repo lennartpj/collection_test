@@ -1,0 +1,66 @@
+---
+# tasks file for ansible_role_network_settings
+- name: Prompt for IPv4 address
+  pause:
+    prompt: "Please enter the IPv4 address and prefix (10.0.0.2/24)"
+  register: ipv4_address_input
+  when: ipv4_address_input is not defined
+
+- name: Prompt for IPv4 gateway
+  pause:
+    prompt: "Please enter the IPv4 gateway"
+  register: ipv4_gateway_input
+  when: ipv4_gateway_input is not defined
+
+- name: Set IPv4 address and gateway
+  set_fact:
+    ipv4_address: "{{ ipv4_address_input.user_input }}"
+    ipv4_gateway: "{{ ipv4_gateway_input.user_input }}"
+
+- name: Apply network configuration
+  include_role:
+    name: redhatofficial.rhel_system_roles.network
+  vars:
+    network_connections:
+      - name: "{{ connection_interface_name }}"
+        type: ethernet
+        zone: "{{ connection_zone }}"
+        autoconnect: yes
+        ip:
+          dhcp4: false
+          auto6: true
+          dns: ["{{ ipv4_dns }}"]
+          dns_search: "{{ ipv4_dns_search }}"
+          address: 
+            - "{{ ipv4_address }}" 
+          gateway4: "{{ ipv4_gateway }}"
+        ipv6:
+          method: "{{ ipv6_method }}"
+  notify: Restart NetworkManager
+
+- name: Check IPv6 addr-gen-mode
+  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.addr-gen-mode
+  register: ipv6_addr_gen_mode_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Check IPv6 dns-search
+  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.dns-search
+  register: ipv6_dns_search_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Check IPv6 ip6-privacy
+  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.ip6-privacy
+  register: ipv6_ip6_privacy_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Apply IPv6 network configuration
+  shell: |
+    nmcli con mod "{{ connection_interface_name }}" ipv6.addr-gen-mode "{{ ipv6_addr_gen_mode }}"
+    nmcli con mod "{{ connection_interface_name }}" ipv6.dns-search "{{ ipv6_dns_search }}"
+    nmcli con mod "{{ connection_interface_name }}" ipv6.ip6-privacy "{{ ipv6_ip6_privacy }}"
+  become: true
+  notify: Restart NetworkManager
+  when: ipv6_addr_gen_mode_check.stdout != "" and ipv6_dns_search_check.stdout != "" and ipv6_ip6_privacy_check.stdout != ""

@@ -1,0 +1,6 @@
+---
+# handlers file for ansible_role_root_config
+- name: restart ssh
+  service:
+    name: sshd
+    state: restarted

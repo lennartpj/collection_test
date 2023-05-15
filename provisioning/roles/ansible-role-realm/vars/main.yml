@@ -1,0 +1,40 @@
+---
+# vars file for Ansible-role-realm
+packages:
+  - realmd
+  - sssd
+  - oddjob
+  - oddjob-mkhomedir
+  - adcli
+  - samba-common-tools
+  - python3-pexpect
+  
+departments:
+  DC:
+    ou_name: 'OU=LINUX,OU=GBITTMDC,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
+  KS:
+    ou_name: 'OU=LINUX,OU=GBITKS,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
+      - 'GG_GBIT_KS_Serveradmin@ukmuenster.de'
+  BS:
+    ou_name: 'OU=LINUX,OU=GBITBS,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
+      - 'GG_GBIT_BS_Serveradmin@ukmuenster.de'
+  NETS:
+    ou_name: 'OU=LINUX,OU=GBITTMNE,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
+      - 'GG_GBIT_TM_NE_ServerAdmins@ukmuenster.de'
+  SO:
+    ou_name: 'OU=LINUX,OU=GBITSO,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
+      - 'GG_GBIT_SO_Serveradmin@ukmuenster.de'
+  KM:
+    ou_name: 'OU=LINUX,OU=GBITTMKM,OU=SERVER,DC=UKMUENSTER,DC=DE'
+    ad_groups:
+      - 'GG_UKM_ServerAdmin@ukmuenster.de'
