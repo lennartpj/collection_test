@@ -1,65 +1,115 @@
 ---
-# tasks file for ansible_role_network_settings
 - name: Prompt for IPv4 address
   pause:
     prompt: "Please enter the IPv4 address and prefix (10.0.0.2/24)"
   register: ipv4_address_input
-  when: ipv4_address_input is not defined
 
 - name: Prompt for IPv4 gateway
   pause:
     prompt: "Please enter the IPv4 gateway"
   register: ipv4_gateway_input
-  when: ipv4_gateway_input is not defined
+# Get the current settings
 
-- name: Set IPv4 address and gateway
+- name: Get current IPv4 addresses
+  shell: nmcli -g ipv4.addresses con show "{{ connection_interface_name }}"
+  register: current_ipv4_addresses
+  changed_when: false
+
+- name: Get current IPv4 gateway
+  shell: nmcli -g ipv4.gateway con show "{{ connection_interface_name }}"
+  register: current_ipv4_gateway
+  changed_when: false
+
+- name: Get current IPv4 dns
+  shell: nmcli -g ipv4.dns con show "{{ connection_interface_name }}"
+  register: current_ipv4_dns
+  changed_when: false
+
+- name: Get current IPv4 dns-search
+  shell: nmcli -g ipv4.dns-search con show "{{ connection_interface_name }}"
+  register: current_ipv4_dns_search
+  changed_when: false
+
+- name: Get current IPv6 method
+  shell: nmcli -g ipv6.method con show "{{ connection_interface_name }}"
+  register: current_ipv6_method
+  changed_when: false
+
+- name: Get current IPv6 addr-gen-mode
+  shell: nmcli -g ipv6.addr-gen-mode con show "{{ connection_interface_name }}"
+  register: current_ipv6_addr_gen_mode
+  changed_when: false
+
+- name: Get current IPv6 dns-search
+  shell: nmcli -g ipv6.dns-search con show "{{ connection_interface_name }}"
+  register: current_ipv6_dns_search
+  changed_when: false
+
+- name: Get current IPv6 ip6-privacy
+  shell: nmcli -g ipv6.ip6-privacy con show "{{ connection_interface_name }}"
+  register: current_ipv6_ip6_privacy
+  changed_when: false
+
+- name: Create privacy state mapping
   set_fact:
-    ipv4_address: "{{ ipv4_address_input.user_input }}"
-    ipv4_gateway: "{{ ipv4_gateway_input.user_input }}"
+    privacy_state_mapping:
+      'disabled': '0'
+      'enabled': '1'
 
-- name: Apply network configuration
-  include_role:
-    name: rhel-system-roles.network
-  vars:
-    network_connections:
-      - name: "{{ connection_interface_name }}"
-        type: ethernet
-        zone: "{{ connection_zone }}"
-        autoconnect: yes
-        ip:
-          dhcp4: false
-          auto6: true
-          dns: ["{{ ipv4_dns }}"]
-          dns_search: "{{ ipv4_dns_search }}"
-          address: 
-            - "{{ ipv4_address }}" 
-          gateway4: "{{ ipv4_gateway }}"
-        ipv6:
-          method: "{{ ipv6_method }}"
+# Apply settings if they differ from the current ones
 
-- name: Check IPv6 addr-gen-mode
-  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.addr-gen-mode
-  register: ipv6_addr_gen_mode_check
-  ignore_errors: true
-  changed_when: false
+- name: Set IPv4 addresses
+  command: nmcli con mod "{{ connection_interface_name }}" ipv4.addresses "{{ ipv4_address_input.user_input }}"
+  become: yes
+  when: current_ipv4_addresses.stdout != ipv4_address_input.user_input
 
-- name: Check IPv6 dns-search
-  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.dns-search
-  register: ipv6_dns_search_check
-  ignore_errors: true
-  changed_when: false
+- name: Set IPv4 gateway
+  command: nmcli con mod "{{ connection_interface_name }}" ipv4.gateway "{{ ipv4_gateway_input.user_input }}"
+  become: yes
+  when: current_ipv4_gateway.stdout != ipv4_gateway_input.user_input
 
-- name: Check IPv6 ip6-privacy
-  shell: nmcli con show "{{ connection_interface_name }}" | grep ipv6.ip6-privacy
-  register: ipv6_ip6_privacy_check
-  ignore_errors: true
-  changed_when: false
+- name: Set IPv4 DNS servers
+  command: nmcli con mod "{{ connection_interface_name }}" ipv4.dns "{{ ipv4_dns | join(',') }}"
+  become: yes
+  when: current_ipv4_dns.stdout != (ipv4_dns | join(','))
 
-- name: Apply IPv6 network configuration
-  shell: |
-    nmcli con mod "{{ connection_interface_name }}" ipv6.addr-gen-mode "{{ ipv6_addr_gen_mode }}"
-    nmcli con mod "{{ connection_interface_name }}" ipv6.dns-search "{{ ipv6_dns_search }}"
-    nmcli con mod "{{ connection_interface_name }}" ipv6.ip6-privacy "{{ ipv6_ip6_privacy }}"
-  become: true
-  notify: Restart NetworkManager
-  when: ipv6_addr_gen_mode_check.stdout != "" and ipv6_dns_search_check.stdout != "" and ipv6_ip6_privacy_check.stdout != ""
+- name: Set IPv4 DNS search domains
+  command: nmcli con mod "{{ connection_interface_name }}" ipv4.dns-search "{{ ipv4_dns_search }}"
+  become: yes
+  when: current_ipv4_dns_search.stdout != ipv4_dns_search
+
+- name: Set IPv6 method
+  command: nmcli con mod "{{ connection_interface_name }}" ipv6.method "{{ ipv6_method }}"
+  become: yes
+  when: current_ipv6_method.stdout != ipv6_method
+
+- name: Set IPv6 addr-gen-mode
+  command: nmcli con mod "{{ connection_interface_name }}" ipv6.addr-gen-mode "{{ ipv6_addr_gen_mode }}"
+  become: yes
+  when: current_ipv6_addr_gen_mode.stdout != ipv6_addr_gen_mode
+
+- name: Set IPv6 dns-search
+  command: nmcli con mod "{{ connection_interface_name }}" ipv6.dns-search "{{ ipv6_dns_search }}"
+  become: yes
+  when: current_ipv6_dns_search.stdout != ipv6_dns_search
+
+- name: Set IPv6 ip6-privacy
+  command: nmcli con mod "{{ connection_interface_name }}" ipv6.ip6-privacy "{{ ipv6_ip6_privacy }}"
+  become: yes
+  when: current_ipv6_ip6_privacy.stdout != privacy_state_mapping[ipv6_ip6_privacy]
+# notify the handler if any change occurred
+
+- name: Restart NetworkManager
+  systemd:
+    name: NetworkManager
+    state: restarted
+  become: yes
+  when: 
+    - current_ipv4_addresses.stdout != ipv4_address_input.user_input or 
+      current_ipv4_gateway.stdout != ipv4_gateway_input.user_input or 
+      current_ipv4_dns.stdout != (ipv4_dns | join(',')) or
+      current_ipv4_dns_search.stdout != ipv4_dns_search or
+      current_ipv6_method.stdout != ipv6_method or
+      current_ipv6_addr_gen_mode.stdout != ipv6_addr_gen_mode or
+      current_ipv6_dns_search.stdout != ipv6_dns_search or
+      current_ipv6_ip6_privacy.stdout != privacy_state_mapping[ipv6_ip6_privacy]
